@@ -12,7 +12,11 @@ import tkinter.font as tkfont
 import customtkinter as ctk
 
 # 第一候補 → フォールバックの順。存在しなければ customtkinter の既定のまま。
-FONT_CANDIDATES = ("Yu Gothic UI", "Meiryo UI", "Meiryo")
+# Windows（游ゴシック / メイリオ）→ macOS（ヒラギノ）の順に探す。
+FONT_CANDIDATES = (
+    "Yu Gothic UI", "Meiryo UI", "Meiryo",
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Hiragino Kaku Gothic Pro",
+)
 
 # 余白・角丸（全画面で共通）
 PAD_X = 16

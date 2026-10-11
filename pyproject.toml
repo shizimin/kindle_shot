@@ -1,12 +1,13 @@
-# 依存を変更したら uv で requirements.txt を再生成する:
-#   kindle_env\Scripts\uv.exe pip compile pyproject.toml -o requirements.txt
+# 依存を変更したら uv で requirements.txt を再生成する（Windows / macOS 両対応の
+# ロックにするため --universal を付ける）:
+#   uv pip compile pyproject.toml --universal --python-version 3.11 -o requirements.txt
 # requirements.txt が source of install (setup.bat / pip install -r が読む)、
 # pyproject.toml が source of truth (人間が編集する)。
 
 [project]
 name = "kindle_shot"
 version = "0.1.0"
-description = "電子書籍のスクリーンキャプチャ・PDF読込・トリミング・PDF変換・OCR統合ツール (Windows専用)"
+description = "電子書籍のスクリーンキャプチャ・PDF読込・トリミング・PDF変換・OCR統合ツール (Windows / macOS)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -21,6 +22,11 @@ dependencies = [
     "reportlab==4.2.5",
     "pypdfium2==4.30.0",
     "customtkinter>=5.2.2",
+    # macOS 専用: ウィンドウ検索・前面化 (Quartz / AppKit / Accessibility) と画面キャプチャ
+    "pyobjc-framework-Quartz>=10.3; sys_platform == 'darwin'",
+    "pyobjc-framework-Cocoa>=10.3; sys_platform == 'darwin'",
+    "pyobjc-framework-ApplicationServices>=10.3; sys_platform == 'darwin'",
+    "mss>=9.0.2; sys_platform == 'darwin'",
 ]
 
 [dependency-groups]

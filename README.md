@@ -1,6 +1,6 @@
 # kindle_shot
 
-電子書籍のスクリーンキャプチャ・PDF読込・トリミング・PDF変換・OCR統合ツール（Windows専用）
+電子書籍のスクリーンキャプチャ・PDF読込・トリミング・PDF変換・OCR統合ツール（Windows / macOS）
 
 Kindle・楽天Kobo・Google Play ブックスなどのビューアで表示中のページを自動キャプチャしたり、手元の
 PDF（自炊スキャン・購入済PDF）を読み込んで、トリミング・PDF化・テキスト抽出（OCR）まで一連の処理を
@@ -14,7 +14,8 @@ PDF（自炊スキャン・購入済PDF）を読み込んで、トリミング�
 
 ## この README の読み方（想定読者）
 
-- **GUI だけ使う人は、この README を読む必要はありません。** `setup.bat` → `run.bat` で起動し、
+- **GUI だけ使う人は、この README を読む必要はありません。** `setup.bat` → `run.bat`
+  （macOS は `setup.command` → `run.command`）で起動し、
   画面の案内（ウィザード）に従えば取り込みから書き出しまで完結します。読むのは
   [セットアップ](#セットアップ) の節だけで十分です。
 - **この README の本体は CLI 利用者向けです。** 無人実行・バッチ処理・エージェントからの呼び出し、
@@ -27,7 +28,7 @@ PDF（自炊スキャン・購入済PDF）を読み込んで、トリミング�
 
 ### 動作環境
 
-- Windows 10 / 11
+- Windows 10 / 11、または macOS 12 以降（Apple シリコン / Intel。macOS は [macOS で使う](#macos-で使う) を参照）
 - Python 3.11〜3.13
   - 依存パッケージ（numpy・Pillow・opencv など）が 3.11〜3.13 向けのビルド済み wheel しか配布して
     いないため、3.14 以降・3.10 以前ではインストールに失敗します
@@ -67,6 +68,48 @@ PDF（自炊スキャン・購入済PDF）を読み込んで、トリミング�
 - 既に 3.11〜3.13 の Python がある場合（`python` が別バージョンでも py ランチャーから見つかれば）は自動インストールに入りません
 - `run.bat` はアプリがエラーで終了してもウィンドウを閉じず、メッセージを残します
 
+### macOS で使う
+
+1. zip を展開し、ターミナルで展開したフォルダに移動して `./setup.sh` を実行
+   （Finder からは `setup.command` をダブルクリック。「開発元を確認できない」と出たら
+   右クリック →「開く」）
+2. 完了表示が出たら `./run.sh`（GUI。Finder からは `run.command`）または `./kindle_shot.sh`（CLI）を使う
+
+`setup.sh` は Windows の `setup.bat` と同じく、Python 3.11〜3.13（tkinter 付き）を探して仮想環境
+`kindle_env` を作り、依存パッケージと NDLOCR-Lite を導入します。Python が無い場合は自動導入せず
+案内を出して止まるので、次のどちらかで Python 3.12 を入れてから再実行してください。
+
+- python.org のインストーラー（tkinter 同梱・おすすめ）: https://www.python.org/downloads/macos/
+- Homebrew: `brew install python@3.12 python-tk@3.12`（Homebrew の Python は tkinter が別パッケージ）
+
+**権限の許可（キャプチャに必須）**: 「システム設定 > プライバシーとセキュリティ」で、アプリを起動する
+ターミナル（Terminal / iTerm など。Finder から `.command` で起動した場合も「ターミナル」）を次の2か所で
+許可し、ターミナルを再起動してください。許可がないとウィンドウが見つからない（タイトルが取れない）・
+ページがめくれない（キーが届かない）状態になります。キャプチャ開始時に不足していれば警告が出ます。
+
+| 権限 | 用途 |
+|---|---|
+| 画面収録（画面とシステムオーディオの録音） | ウィンドウ名の取得・画面キャプチャ |
+| アクセシビリティ | ページめくりのキー送信・ウィンドウの前面化 |
+
+**Windows との違い**
+
+- 全画面化のキーは **F11 ではなく Control+Command+F**（Chrome・Kindle アプリ共通）。GUI の案内や
+  `open` コマンドの自動全画面化も macOS ではこのキーを使います
+- プロファイルの `process_name`（`chrome.exe` / `Kindle.exe`）は macOS ではアプリ名
+  （`Google Chrome` / `Kindle`）に自動で読み替えます。カスタムプロファイルではアプリ名をそのまま
+  書いても構いません
+- Retina ディスプレイでは物理ピクセル（ポイントの2倍など）でキャプチャします。手動クロップ
+  （`manual_left` / `manual_right`）の座標もこの画像上のピクセルです
+- `click_position: "top_left"`（Kindle アプリ）は macOS ではクリックしません（左上に閉じる/最小化
+  ボタンがあるため。前面化だけでキー入力が届きます）
+- スリープ抑止は `caffeinate` で行います
+- 検索可能PDF・テキストPDFの埋め込みフォントは、ヒラギノが reportlab で読めない形式のため
+  `Arial Unicode`（macOS 標準）を使います。`NotoSansJP-Regular.ttf` を `~/Library/Fonts` に
+  入れておくとそちらを優先します
+- CLI の例の `kindle_shot.bat` は `./kindle_shot.sh` に、`C:\books` のようなパスは `~/books` などに
+  読み替えてください
+
 ### 手動セットアップ
 
 ```bat
@@ -76,6 +119,17 @@ kindle_env\Scripts\activate
 pip install -r requirements.txt
 git clone https://github.com/ndl-lab/ndlocr-lite.git
 pip install -r ndlocr-lite\requirements.txt
+```
+
+macOS:
+
+```sh
+cd kindle_shot
+python3.12 -m venv kindle_env
+source kindle_env/bin/activate
+pip install -r requirements.txt
+git clone https://github.com/ndl-lab/ndlocr-lite.git
+pip install -r ndlocr-lite/requirements.txt
 ```
 
 ### トラブルシュート
@@ -114,7 +168,7 @@ pip install -r ndlocr-lite\requirements.txt
   → 書き出す → 完了）。主要なボタンは常に画面下部のバーに出ます
 - 取り込み方は「電子書籍を画面から取り込む」「手持ちのPDFを取り込む」の2択
 - 出力形式は「画像PDF（既定）／検索できるPDF／Markdown」の3択
-- **キャプチャは「キャプチャ開始」を押してから数秒の待機があります。その間にビューアを F11 で
+- **キャプチャは「キャプチャ開始」を押してから数秒の待機があります。その間にビューアを F11（macOS は Control+Command+F）で
   全画面にしてください**（すでに全画面ならそのまま待つ）。残り秒数は画面に表示されます
 - キャプチャ設定の「保存先フォルダ」はページ画像を置く**作業用フォルダ**です（初期値は
   `%USERPROFILE%\Documents\kindle_shot`。この下に「タイトル」名のフォルダを作ります）。
@@ -710,7 +764,9 @@ kindle_shot/
 │   ├── text_stats.py       # 分量見積り
 │   ├── text_patterns.py    # テキスト処理共通の文字クラス・正規表現
 │   ├── image_files.py      # 画像拡張子定義と列挙
+│   ├── platform_utils.py   # OS 依存処理の窓口（Windows / macOS を切り替え）
 │   ├── win32_utils.py      # Win32 API（ウィンドウ操作・スリープ抑止）
+│   ├── macos_utils.py      # macOS 版（Quartz / AppKit / Accessibility・mss・caffeinate）
 │   ├── dpi.py              # DPI 認識の初期化（GUI/CLI 共用）
 │   └── config.py           # 設定管理（core/config.json の読み書き）
 ├── ui/                     # GUI（customtkinter・ウィザード）
@@ -729,7 +785,8 @@ kindle_shot/
 ├── config.example.json     # 設定の雛形（DEFAULT_CONFIG から機械生成）
 ├── replacements.json       # OCR テキストの置換ルール
 ├── requirements.txt
-├── setup.bat / run.bat / kindle_shot.bat   # 環境構築 / GUI 起動 / CLI ランチャー
+├── setup.bat / run.bat / kindle_shot.bat   # 環境構築 / GUI 起動 / CLI ランチャー（Windows）
+├── setup.sh / run.sh / kindle_shot.sh      # 同（macOS。setup.command / run.command は Finder 用）
 ├── kindle_env/             # 仮想環境（setup.bat で自動生成）
 └── ndlocr-lite/            # OCR エンジン（setup.bat で自動取得）
 ```
@@ -755,4 +812,5 @@ kindle_shot 本体は MIT ライセンスです（同梱の `LICENSE` を参照�
 - テスト: `kindle_env\Scripts\python.exe -m pytest`（純ロジックと CLI の JSON 契約。Win32 実行系・
   OCR 実行系は対象外）
 - lint: `kindle_env\Scripts\python.exe -m ruff check .`
-- 依存の変更: `pyproject.toml` を編集 → `kindle_env\Scripts\uv.exe pip compile pyproject.toml -o requirements.txt`
+- 依存の変更: `pyproject.toml` を編集 → `uv pip compile pyproject.toml --universal --python-version 3.11 -o requirements.txt`
+  （`--universal` で Windows / macOS 両方のロックになる。macOS 専用の pyobjc・mss は環境マーカー付き）

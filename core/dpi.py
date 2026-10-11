@@ -29,6 +29,11 @@ def enable_per_monitor_dpi_awareness():
     pyautogui より先（= モジュール先頭）で呼ばないと効かない。
     """
     import contextlib
+    import sys
+
+    if sys.platform != "win32":
+        # macOS は OS 側で座標がポイントに統一されているため設定不要
+        return
     from ctypes import windll
     try:
         # PROCESS_PER_MONITOR_DPI_AWARE = 2 (Windows 8.1+)

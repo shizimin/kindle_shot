@@ -10,10 +10,9 @@ import time
 import cv2
 import numpy as np
 import pyautogui as pag
-from PIL import ImageGrab
 
 from .boundary_detector import create_detector
-from .win32_utils import activate_window, find_window, get_window_rect
+from .platform_utils import activate_window, find_window, get_window_rect, grab_screen
 
 pag.FAILSAFE = False
 
@@ -90,10 +89,8 @@ class CaptureEngine:
     def _grab(self):
         """画面をキャプチャして BGR numpy 配列を返す。対象ウィンドウ設定時はその領域のみ。"""
         bbox = self._target_rect if self._target_rect else None
-        # all_screens=True がないと PIL はプライマリモニタしか取得せず、
-        # セカンドモニタ上のウィンドウ (bbox が x>=プライマリ幅 など) は
-        # 範囲外となり真っ黒画像になる。境界検出が全行で失敗する原因。
-        img = ImageGrab.grab(bbox=bbox, all_screens=True)
+        # マルチモニタ対応・Retina の物理解像度での取得は grab_screen 側で行う
+        img = grab_screen(bbox)
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
     def find_target_window(self):
@@ -167,7 +164,7 @@ class CaptureEngine:
 
             self._on_status(f"境界検出完了: left={lft}, right={rht}")
 
-            # 前面化のクリックや F11 でビューアが一時的に出す UI (ツールバー・
+            # 前面化のクリックや全画面化でビューアが一時的に出す UI (ツールバー・
             # ページバー等) が1ページ目に写り込まないよう、画面が静止するまで
             # 待ってから撮り始める。settle 無効のビューア (Kindle for PC 等) は
             # 最初の「変化した」フレームを即保存するため、ここで待たないと

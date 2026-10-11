@@ -7,7 +7,7 @@ chapters 引数 ([Chapter, ...]) を渡すと、対応するページにしお�
 (PDF アウトライン) を埋め込む。chapter_detector.detect_chapters の
 出力をそのまま渡せる。
 
-テキストを含む PDF (検索可能PDF / テキストPDF) は、Windows 標準の日本語
+テキストを含む PDF (検索可能PDF / テキストPDF) は、OS 標準の日本語
 TrueType フォントをサブセット埋め込みして生成する (register_japanese_font)。
 """
 
@@ -32,6 +32,12 @@ JAPANESE_FONT_CANDIDATES = [
     (r"C:\Windows\Fonts\msgothic.ttc", 0),  # MS ゴシック
     (r"C:\Windows\Fonts\YuGothM.ttc", 0),   # 游ゴシック Medium
     (r"C:\Windows\Fonts\meiryo.ttc", 0),    # メイリオ
+    # macOS。ヒラギノは CFF (PostScript) アウトラインで reportlab の TTFont が
+    # 読めないため、TrueType アウトラインの日本語対応フォントを使う。
+    (os.path.expanduser("~/Library/Fonts/NotoSansJP-Regular.ttf"), 0),  # 任意導入
+    ("/Library/Fonts/NotoSansJP-Regular.ttf", 0),                       # 任意導入
+    ("/System/Library/Fonts/Supplemental/Arial Unicode.ttf", 0),        # macOS 10.15+
+    ("/Library/Fonts/Arial Unicode.ttf", 0),                            # 旧 macOS
 ]
 
 # 埋め込みに成功したときの reportlab 上のフォント名

@@ -506,7 +506,7 @@ def build_parser():
                              "ブラウザ型ビューアの上下めくりは pagedown。"
                              "巻き戻しはその逆を押す。既定はプロファイルの値）")
     p_open.add_argument("--no-fullscreen", action="store_true",
-                        help="F11 全画面化をスキップ")
+                        help="全画面化（Windows: F11 / macOS: Control+Command+F）をスキップ")
     p_open.add_argument("--no-rewind", action="store_true",
                         help="先頭ページへの巻き戻しをスキップ（現在位置から開始）")
     p_open.add_argument("--max-rewind", type=int, default=1000, metavar="N",

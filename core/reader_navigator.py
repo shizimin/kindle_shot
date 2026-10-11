@@ -1,6 +1,6 @@
-"""Kindle Cloud Reader のナビゲーション（Win32 依存・Cloud Reader 専用）
+"""Kindle Cloud Reader のナビゲーション（OS 依存部は core.platform_utils・Cloud Reader 専用）
 
-「本を URL で開く → 読み込み待ち → F11 全画面化 → リーダー UI を非表示化 →
+「本を URL で開く → 読み込み待ち → 全画面化（F11 / macOS は Control+Command+F） → リーダー UI を非表示化 →
 先頭ページへ巻き戻し」の一連の手順。キャプチャ開始前の準備を無人で行う。
 
 注意: 先頭ページへの巻き戻しは Kindle の読書位置 (Whispersync) を動かす。
@@ -9,6 +9,7 @@ emit / 終了コードの規約は core.pipeline のモジュール docstring �
 """
 
 import os
+import sys
 import time
 
 from core.capture_engine import CaptureEngine
@@ -35,17 +36,17 @@ def _reader_arrow_dark(hwnd):
     なので差分が UI 分になる)。
     """
     import numpy as np
-    from PIL import ImageGrab
 
-    from core.win32_utils import get_window_rect
+    from core.platform_utils import get_window_rect, grab_screen
 
     left, top, right, bottom = get_window_rect(hwnd)
     w, h = right - left, bottom - top
     y0, y1 = top + int(h * 0.45), top + int(h * 0.55)
-    lb = ImageGrab.grab(bbox=(left + int(w * 0.02), y0, left + int(w * 0.08), y1),
-                        all_screens=True).convert("L")
-    rb = ImageGrab.grab(bbox=(left + int(w * 0.92), y0, left + int(w * 0.98), y1),
-                        all_screens=True).convert("L")
+    # scale_to_bbox: Retina でも画面座標と同じ解像度で数え、しきい値を OS 共通にする
+    lb = grab_screen((left + int(w * 0.02), y0, left + int(w * 0.08), y1),
+                     scale_to_bbox=True).convert("L")
+    rb = grab_screen((left + int(w * 0.92), y0, left + int(w * 0.98), y1),
+                     scale_to_bbox=True).convert("L")
     return int((np.asarray(lb, np.uint8) < 128).sum()) + \
         int((np.asarray(rb, np.uint8) < 128).sum())
 
@@ -62,12 +63,12 @@ def _find_modal_button(hwnd):
       2. 中央付近に塗りつぶしの黒い矩形 (=確定ボタン) がある
     """
     import numpy as np
-    from PIL import ImageGrab
 
-    from core.win32_utils import get_window_rect
+    from core.platform_utils import get_window_rect, grab_screen
 
     left, top, right, bottom = get_window_rect(hwnd)
-    img = ImageGrab.grab(bbox=(left, top, right, bottom), all_screens=True).convert("L")
+    # 返す座標をクリックに使うため、画像を画面座標と同じ解像度にそろえる
+    img = grab_screen((left, top, right, bottom), scale_to_bbox=True).convert("L")
     ds = 4
     arr = np.asarray(img.resize((img.width // ds, img.height // ds)), np.uint8)
     h, w = arr.shape
@@ -127,7 +128,7 @@ def open_book(profile, *, asin=None, url=None, page_turn=None,
         asin: 本の ASIN (read.amazon.co.jp/?asin=<ASIN> を開く)
         url: 開く URL の直接指定 (asin より優先)
         page_turn: 次ページのキーの上書き (巻き戻しはその逆を押す)
-        no_fullscreen: F11 全画面化をスキップ
+        no_fullscreen: 全画面化をスキップ
         no_rewind: 先頭ページへの巻き戻しをスキップ
         max_rewind: 巻き戻しキーを押す回数の上限
         load_wait: ページ読み込み完了を待つ最大秒数
@@ -136,7 +137,7 @@ def open_book(profile, *, asin=None, url=None, page_turn=None,
     Returns:
         終了コード
     """
-    from core.win32_utils import allow_sleep, prevent_sleep
+    from core.platform_utils import allow_sleep, prevent_sleep
 
     if page_turn:
         profile.page_turn_key = page_turn
@@ -156,17 +157,30 @@ def _open_impl(profile, *, asin, url, no_fullscreen, no_rewind,
                max_rewind, load_wait, emit):
     import numpy as np
     import pyautogui as pag
-    from PIL import ImageGrab
 
-    from core.win32_utils import (
+    from core.platform_utils import (
+        WINDOW_NOT_FOUND_HINT,
         get_window_process_name,
         get_window_rect,
         get_window_title,
+        grab_screen,
         is_window_fullscreen,
+        missing_permissions,
+        open_path,
+        process_name_matches,
+        toggle_fullscreen,
     )
 
+    missing = missing_permissions()
+    if missing:
+        warn = (
+            f"警告: macOS の権限（{'・'.join(missing)}）が許可されていません。"
+            "システム設定 > プライバシーとセキュリティ で許可してください"
+        )
+        emit("status", human=warn, message=warn, missing_permissions=missing)
+
     url = url or f"https://read.amazon.co.jp/?asin={asin}"
-    os.startfile(url)
+    open_path(url)
     emit("opened", human=f"ブラウザで開いています: {url}", url=url)
     # 新しいタブがアクティブになる前に既存タブの静止画面を「読み込み完了」と
     # 誤判定しないよう、まず固定で待つ
@@ -180,7 +194,7 @@ def _open_impl(profile, *, asin, url, no_fullscreen, no_rewind,
         cand = engine.find_target_window()
         if cand is not None:
             exe = get_window_process_name(cand)
-            if not profile.process_name or exe.lower() == profile.process_name.lower():
+            if process_name_matches(exe, profile.process_name):
                 hwnd = cand
                 break
         time.sleep(1)
@@ -188,7 +202,7 @@ def _open_impl(profile, *, asin, url, no_fullscreen, no_rewind,
         emit_error(
             emit,
             f"対象ウィンドウが見つかりません: {profile.window_title_keyword} "
-            f"(プロセス: {profile.process_name or '指定なし'})"
+            f"(プロセス: {profile.process_name or '指定なし'}){WINDOW_NOT_FOUND_HINT}"
         )
         return EXIT_WINDOW_NOT_FOUND
     emit(
@@ -200,9 +214,8 @@ def _open_impl(profile, *, asin, url, no_fullscreen, no_rewind,
     engine.activate_target_window(hwnd)
 
     def grab_thumb():
-        rect = get_window_rect(hwnd)
         try:
-            img = ImageGrab.grab(bbox=rect, all_screens=True)
+            img = grab_screen(get_window_rect(hwnd))
         except OSError as e:
             # ロック画面・セッション切断中は grabscreen が失敗する
             raise ScreenLocked(str(e)) from e
@@ -287,14 +300,15 @@ def _open_impl(profile, *, asin, url, no_fullscreen, no_rewind,
                  human="注意: 位置同期ダイアログを閉じられなかった可能性があります",
                  message="position_dialog_remains")
 
-    # 全画面化 (F11 はトグルなので、すでに全画面なら押さない)
+    # 全画面化 (F11 / Control+Command+F はトグルなので、すでに全画面なら押さない)
     if not no_fullscreen:
         if is_window_fullscreen(hwnd):
             emit("fullscreen", human="すでに全画面表示です", entered=False)
         else:
             engine.activate_target_window(hwnd)
-            pag.press("f11")
-            time.sleep(2)
+            toggle_fullscreen()
+            # macOS は全画面スペースへの切り替えアニメーションがあるため長めに待つ
+            time.sleep(3 if sys.platform == "darwin" else 2)
             wait_stable(15)
             emit("fullscreen", human="全画面にしました", entered=True)
 

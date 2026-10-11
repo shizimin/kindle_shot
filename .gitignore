@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+kindle_env/
+ndlocr-lite/
+core/config.json

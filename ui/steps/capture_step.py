@@ -16,7 +16,7 @@ from core.capture_runner import run_capture
 from core.image_files import list_images
 from core.page_turn_probe import probe_page_turn_key
 from core.pipeline import EXIT_OK
-from core.win32_utils import sanitize_folder_name
+from core.platform_utils import FULLSCREEN_KEY_LABEL, sanitize_folder_name
 from ui import theme
 from ui.profile_choices import build_profile_choices, resolve_profile
 from ui.tab_utils import GuiEmitter, browse_folder_into, run_in_thread
@@ -40,7 +40,7 @@ _KEY_BY_LABEL = {label: key for key, label in PAGE_TURN_CHOICES}
 START_GUIDE = (
     "1. 本をビューアで開いて先頭ページを表示する\n"
     "2. 「キャプチャ開始」を押すとビューアが前面に出ます\n"
-    "3. 待機中（数秒）に F11 で全画面にする（すでに全画面ならそのまま待つ）\n"
+    f"3. 待機中（数秒）に {FULLSCREEN_KEY_LABEL} で全画面にする（すでに全画面ならそのまま待つ）\n"
     "4. 待機が終わるとキャプチャが始まります"
     "（終わるまでビューアの画面を操作しないでください）"
 )
@@ -386,7 +386,7 @@ class CaptureStep(WizardStep):
         self.progress.start_indeterminate()
         self.progress.log("キャプチャを開始します")
         # core 側の待機（fullscreen_wait）中は無音になるので、残り秒数と
-        # 「今のうちに F11」をここで表示する（core の emit と多少重複してよい）
+        # 「今のうちに全画面化」をここで表示する（core の emit と多少重複してよい）
         self._start_wait_countdown(profile.fullscreen_wait)
 
         root = self.winfo_toplevel()
@@ -425,7 +425,7 @@ class CaptureStep(WizardStep):
             return
         self.progress.status_var.set(
             f"{self._countdown_left}秒後にキャプチャを開始します — "
-            "この間にビューアを F11 で全画面にしてください"
+            f"この間にビューアを {FULLSCREEN_KEY_LABEL} で全画面にしてください"
         )
         self._countdown_left -= 1
         self._countdown_job = self.after(1000, self._tick_wait_countdown)

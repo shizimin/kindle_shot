@@ -1,6 +1,7 @@
 """Win32 API ユーティリティ
 
 ウィンドウの検索・活性化、ダイアログ表示など Windows 固有の操作を提供する。
+直接 import せず core.platform_utils 経由で使うこと（macOS 版は core.macos_utils）。
 """
 
 import os
@@ -329,17 +330,12 @@ def allow_sleep():
         windll.kernel32.SetThreadExecutionState(_ES_CONTINUOUS)
 
 
-# Windows のフォルダ名に使えない文字 → 全角（見た目を保つ）。
-# タイトルはそのまま保存フォルダ名になるため、使う前に必ず通す。
-_INVALID_NAME_CHARS = {
-    "\\": "￥", "/": "／", ":": "：", "*": "＊",
-    "?": "？", '"': "”", "<": "＜", ">": "＞", "|": "｜",
-}
+def grab_screen(bbox=None):
+    """画面（bbox 指定時はその範囲）を撮って PIL Image を返す。
 
+    all_screens=True がないと PIL はプライマリモニタしか取得せず、
+    セカンドモニタ上のウィンドウは範囲外となり真っ黒画像になる。
+    """
+    from PIL import ImageGrab
 
-def sanitize_folder_name(text):
-    """フォルダ名として使えるように整える（不正文字を全角に置換）。"""
-    cleaned = "".join(_INVALID_NAME_CHARS.get(ch, ch) for ch in text)
-    # 末尾のピリオド・空白は Windows のフォルダ名として無効
-    return cleaned.strip().rstrip(". 　")
-
+    return ImageGrab.grab(bbox=bbox, all_screens=True)

@@ -553,8 +553,8 @@ def run_book(*, title, output, profile_key="kindle_cloud", asin=None, url=None,
     from core.capture_profiles import get_profile
     from core.capture_runner import run_capture
     from core.config import load_config
+    from core.platform_utils import allow_sleep, prevent_sleep
     from core.reader_navigator import open_book
-    from core.win32_utils import allow_sleep, prevent_sleep
 
     cfg = config if config is not None else load_config()
     profile = get_profile(profile_key, cfg)
@@ -873,7 +873,7 @@ def run_batch(books, *, output, defaults=None, overwrite=False,
         終了コード（失敗が1冊でもあれば EXIT_ERROR）
     """
     from core.config import load_config
-    from core.win32_utils import allow_sleep, prevent_sleep
+    from core.platform_utils import allow_sleep, prevent_sleep
 
     cfg = config if config is not None else load_config()
     defaults = defaults or {}

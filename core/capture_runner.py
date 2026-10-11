@@ -1,4 +1,4 @@
-"""キャプチャ実行のオーケストレーション（Win32 依存）
+"""キャプチャ実行のオーケストレーション（OS 依存部は core.platform_utils）
 
 「対象ウィンドウを検出 → 前面化 → マウスを中央へ → 待機 → マウスを別モニタへ退避（なければ中央） →
 CaptureEngine を開始 → 完了待ち → manifest.json 書き出し」の一連の手順。
@@ -37,16 +37,22 @@ def find_verified_window(engine, profile, emit=null_emit, *, strict_process=True
     Returns:
         (hwnd, exit_code)。成功時は (hwnd, None)。
     """
-    from core.win32_utils import get_window_process_name, get_window_title
+    from core.platform_utils import (
+        WINDOW_NOT_FOUND_HINT,
+        get_window_process_name,
+        get_window_title,
+        process_name_matches,
+    )
 
     hwnd = engine.find_target_window()
     if hwnd is None:
-        emit_error(emit, f"対象ウィンドウが見つかりません: {profile.window_title_keyword}")
+        emit_error(emit, f"対象ウィンドウが見つかりません: {profile.window_title_keyword}"
+                         f"{WINDOW_NOT_FOUND_HINT}")
         return None, EXIT_WINDOW_NOT_FOUND
 
     win_title = get_window_title(hwnd)
     win_exe = get_window_process_name(hwnd)
-    if profile.process_name and win_exe.lower() != profile.process_name.lower():
+    if not process_name_matches(win_exe, profile.process_name):
         mismatch = (
             f'ウィンドウ "{win_title}" ({win_exe}) はプロファイルの想定プロセス '
             f"{profile.process_name} と一致しません。対象アプリが起動しているか確認してください"
@@ -66,10 +72,12 @@ def find_verified_window(engine, profile, emit=null_emit, *, strict_process=True
 
 def waiting_message(seconds, already_fullscreen):
     """キャプチャ開始前の待機メッセージを返す。"""
+    from core.platform_utils import FULLSCREEN_KEY_LABEL
+
     message = f"{seconds}秒待機後にキャプチャを開始します..."
     if already_fullscreen:
         return message
-    return message + "（この間にビューアを F11 で全画面にしてください）"
+    return message + f"（この間にビューアを {FULLSCREEN_KEY_LABEL} で全画面にしてください）"
 
 
 def choose_cursor_park_point(window_rect, monitor_rects):
@@ -109,11 +117,12 @@ def run_capture(profile, title, output_folder, *, profile_key=None,
     Returns:
         終了コード
     """
-    from core.win32_utils import (
+    from core.platform_utils import (
         allow_sleep,
         get_monitor_rects,
         get_window_rect,
         is_window_fullscreen,
+        missing_permissions,
         prevent_sleep,
     )
 
@@ -154,6 +163,15 @@ def run_capture(profile, title, output_folder, *, profile_key=None,
         result["dir"] = sdir
         done.set()
 
+    missing = missing_permissions()
+    if missing:
+        warn = (
+            f"警告: macOS の権限（{'・'.join(missing)}）が許可されていません。"
+            "システム設定 > プライバシーとセキュリティ で、このアプリを起動した"
+            "ターミナル（または Python）を許可し、アプリを再起動してください"
+        )
+        emit("status", human=warn, message=warn, missing_permissions=missing)
+
     engine = CaptureEngine(profile, on_page, on_status, on_complete,
                            exclude_pid=os.getpid())
     hwnd, err = find_verified_window(engine, profile, emit,
@@ -161,7 +179,7 @@ def run_capture(profile, title, output_folder, *, profile_key=None,
     if err is not None:
         return err
 
-    # 前面化のために先に矩形を取るが、これは確定値ではない。待機中に F11 で
+    # 前面化のために先に矩形を取るが、これは確定値ではない。待機中に全画面化
     # 全画面化されると矩形が変わるため、待機後に取り直す（下記）。
     engine.set_target_window(hwnd)
     engine.activate_target_window(hwnd)

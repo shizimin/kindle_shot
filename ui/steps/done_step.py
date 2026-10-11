@@ -5,10 +5,12 @@
 """
 
 import os
+import subprocess
 from tkinter import messagebox
 
 import customtkinter as ctk
 
+from core.platform_utils import open_path
 from ui import theme
 from ui.wizard import STEP_CONVERT, STEP_HOME, STEP_TRIM, WizardStep
 
@@ -53,6 +55,6 @@ class DoneStep(WizardStep):
             messagebox.showerror("エラー", f"出力フォルダが見つかりません:\n{folder}")
             return
         try:
-            os.startfile(folder)  # noqa: SIM115 (Windows のエクスプローラで開く)
-        except OSError as e:
+            open_path(folder)  # エクスプローラ / Finder で開く
+        except (OSError, subprocess.CalledProcessError) as e:
             messagebox.showerror("エラー", f"フォルダを開けません: {e}")
