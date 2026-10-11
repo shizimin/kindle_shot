@@ -1,0 +1,24 @@
+{
+  "groups": [
+    {
+      "name": "A群 マンガ（読む用の画像PDF・OCRなし）",
+      "output": "books_a.json",
+      "match": "^名探偵コナン",
+      "sort": "volume",
+      "take": 35,
+      "defaults": { "format": "image_pdf" }
+    },
+    {
+      "name": "B群 小説（NotebookLM 用 Markdown）",
+      "output": "books_b.json",
+      "match": "シャーロック・ホームズ|緋色の研究|四つの署名|バスカヴィル",
+      "defaults": { "format": "markdown", "split_words": 450000 }
+    },
+    {
+      "name": "C群 教科書（書き込み用の検索可能PDF・横書きは page_turn: right）",
+      "output": "books_c.json",
+      "match": "SQL|pandas|Python",
+      "defaults": { "format": "searchable_pdf", "page_turn": "right" }
+    }
+  ]
+}

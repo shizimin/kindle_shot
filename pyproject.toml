@@ -1,0 +1,75 @@
+# 依存を変更したら uv で requirements.txt を再生成する:
+#   kindle_env\Scripts\uv.exe pip compile pyproject.toml -o requirements.txt
+# requirements.txt が source of install (setup.bat / pip install -r が読む)、
+# pyproject.toml が source of truth (人間が編集する)。
+
+[project]
+name = "kindle_shot"
+version = "0.1.0"
+description = "電子書籍のスクリーンキャプチャ・PDF読込・トリミング・PDF変換・OCR統合ツール (Windows専用)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+dependencies = [
+    "pyautogui>=0.9.54",
+    # NDLOCR-Lite が strict pin で要求する版に揃え、setup 時のダウングレード churn を防ぐ
+    # NDLOCR-Lite の requirements.txt が更新されたら以下も追従する
+    "opencv-python>=4.11,<4.14",
+    "numpy==2.2.2",
+    "Pillow==12.1.1",
+    "reportlab==4.2.5",
+    "pypdfium2==4.30.0",
+    "customtkinter>=5.2.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15",
+    "uv>=0.11",
+    "pytest>=8",
+]
+
+# ============================================================
+# pytest
+# ============================================================
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+# ============================================================
+# ruff (lint + format)
+# ============================================================
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+extend-exclude = [
+    "kindle_env",
+    "ndlocr-lite",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (line-length is a soft target)
+    "E402",  # module level import not at top of file (some scripts need it)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

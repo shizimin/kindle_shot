@@ -1,0 +1,38 @@
+{
+  "capture": {
+    "active_profile": "kindle",
+    "profiles": {}
+  },
+  "gui": {
+    "last_save_folder": "",
+    "last_output_folder": ""
+  },
+  "trim": {
+    "left_margin": 0,
+    "right_margin": 0,
+    "top_margin": 0,
+    "bottom_margin": 0
+  },
+  "ocr": {
+    "reflow_paragraphs": true,
+    "workers": 1,
+    "preprocess": {
+      "enabled": true,
+      "upscale": 1.5,
+      "enhance_contrast": true,
+      "binarize": false,
+      "binarize_threshold": 180
+    },
+    "replacements": {
+      "enabled": true,
+      "path": ""
+    },
+    "chapter_bookmarks": {
+      "enabled": true
+    },
+    "markdown": {
+      "style": "notebooklm",
+      "embed_images": false
+    }
+  }
+}
