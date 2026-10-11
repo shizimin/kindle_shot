@@ -6,7 +6,7 @@ export PYTHONIOENCODING=utf-8
 
 if [ ! -x kindle_env/bin/python ]; then
     echo "========================================"
-    echo "[ERROR] セットアップがまだ完了していません。先に ./setup.sh を実行してください。"
+    echo "[ERROR] セットアップがまだ完了していません。先に bash setup.sh を実行してください。"
     echo "========================================"
     exit 1
 fi

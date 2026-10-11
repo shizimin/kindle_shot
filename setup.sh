@@ -1,6 +1,6 @@
 #!/bin/bash
 # kindle_shot セットアップ（macOS）
-# 使い方: ターミナルで  ./setup.sh  （Finder からは setup.command をダブルクリック）
+# 使い方: ターミナルで  bash setup.sh
 set -u
 cd "$(dirname "$0")" || exit 1
 
@@ -59,7 +59,7 @@ if [ -z "$PY" ]; then
         echo "  brew install python-tk@3.12"
         echo
     fi
-    echo "次のどちらかで Python 3.12 をインストールしてから、もう一度 ./setup.sh を実行してください。"
+    echo "次のどちらかで Python 3.12 をインストールしてから、もう一度 bash setup.sh を実行してください。"
     echo "  - python.org のインストーラ（tkinter 同梱・おすすめ）:"
     echo "      https://www.python.org/downloads/macos/"
     echo "  - Homebrew:"
@@ -134,7 +134,7 @@ chmod +x run.sh run.command kindle_shot.sh setup.command 2>/dev/null
 echo
 echo "========================================"
 echo "  セットアップが完了しました。"
-echo "  ./run.sh（Finder からは run.command）でアプリが起動します。"
+echo "  bash run.sh でアプリが起動します。"
 echo
 echo "  【重要】キャプチャ機能を使うには macOS の権限が必要です。"
 echo "  システム設定 > プライバシーとセキュリティ で、アプリを起動する"
